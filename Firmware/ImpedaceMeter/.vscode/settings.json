@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "*.c": "c",
+        "*.md": "markdown",
+        "utils.h": "c",
+        "adc_continuous.h": "c",
+        "esp_log.h": "c",
+        "freertos.h": "c",
+        "complex.h": "c"
+    }
+}
