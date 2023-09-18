@@ -37,6 +37,9 @@ adc_continuous_handle_t adc_handle = NULL;
 fft_config_t *voltage_fft;
 fft_config_t *current_fft;
 
+float voltage_samples[NFFT];
+float current_sample[NFFT];
+
 esp_err_t ret;
 uint32_t ret_num = 0;
 uint8_t result[NUM_SAMPLES] = {0};
@@ -56,9 +59,9 @@ impedanceBin binList[] = {
     {0.1, 20000, 0, 0},
     {1, 20000, 0, 0},
     {10.0, 20000, 0, 0},
-    {100.0, 40000, 0, 0},
-    {1000.0, 60000, 0, 0},
-    {5000.0, 65000, 0, 0}};
+    {100.0, 20000, 0, 0},
+    {1000.0, 20000, 0, 0},
+    {5000.0, 20000, 0, 0}};
 
 void start_app();
 void init_app();
@@ -66,6 +69,7 @@ void sample_adc();
 void compute_impedance();
 void send_data();
 void reconfig();
+void removeDC(fft_config_t *signal);
 
 static bool IRAM_ATTR s_conv_done_cb(adc_continuous_handle_t handle, const adc_continuous_evt_data_t *edata, void *user_data)
 {
@@ -93,7 +97,7 @@ void app_main()
             start_app();
             break;
         case STATE_INIT:
-            printf("%d\tinit\n",binIndex);
+            printf("%d\tinit\n", binIndex);
             init_app();
             gpio_set_level(LED_PIN, 1);
             break;
@@ -141,7 +145,8 @@ void init_app()
 {
     printf("*\n");
     printf("Change the frequency and press the ready button\n");
-    while(!gpio_get_level(READY_PIN)){
+    while (!gpio_get_level(READY_PIN))
+    {
         vTaskDelay(1);
     }
     vTaskDelay(20);
@@ -168,11 +173,16 @@ void sample_adc()
         {
             adc_digi_output_data_t *v = (adc_digi_output_data_t *)&result[i];
             adc_digi_output_data_t *c = (adc_digi_output_data_t *)&result[i + 2];
+
+            uint32_t voltage_data = ADC_GET_DATA(v);
+            uint32_t current_data = ADC_GET_DATA(c);
             /* Check the channel number validation, the data is invalid if the channel num exceed the maximum channel */
-            if ((ADC_GET_CHANNEL(c) < SOC_ADC_CHANNEL_NUM(ADC_UNIT_1)) & ((ADC_GET_CHANNEL(v) < SOC_ADC_CHANNEL_NUM(ADC_UNIT_1))))
+            if ((ADC_GET_CHANNEL(c) == CURRENT_CHANNEL) & ((ADC_GET_CHANNEL(v) == VOLTAGE_CHANNEL)))
             {
-                voltage_fft->input[k] = (float)ADC_GET_DATA(v);
-                current_fft->input[k] = (float)ADC_GET_DATA(c);
+                voltage_samples[k] = (float)voltage_data;
+                current_sample[k] = (float)current_data;
+                voltage_fft->input[k] = voltage_data;
+                current_fft->input[k] = current_data;
                 k++;
             }
             else
@@ -226,16 +236,31 @@ void send_data()
     printf("Sending data\n");
     for (int i = 0; i < voltage_fft->size / 2; i++)
     {
-        printf(">%f:%f:%f:%f:%f:%f\n", voltage_fft->input[i], current_fft->input[i],
+        printf(">%f:%f:%f:%f:%f:%f\n", voltage_samples[i], current_sample[i],
                voltage_fft->output[2 * i], voltage_fft->output[2 * i + 1],
                current_fft->output[2 * i], current_fft->output[2 * i + 1]);
     }
     for (int i = (voltage_fft->size / 2); i < voltage_fft->size; i++)
     {
-        printf(">%f:%f:0:0:0:0\n", voltage_fft->input[i], current_fft->input[i]);
+        printf(">%f:%f:0:0:0:0\n", voltage_samples[i], current_sample[i]);
     }
     printf("#\n");
 
     fft_destroy(voltage_fft);
     fft_destroy(current_fft);
+}
+
+void removeDC(fft_config_t *signal)
+{
+    double mean = 0;
+    for (int i = 0; i < signal->size; i++)
+        mean += signal->input[i];
+
+    mean = mean / NFFT;
+    printf("Mean: %f\n", mean);
+
+    for (int i = 0; i < signal->size; i++)
+    {
+        signal->input[i] -= mean;
+    }
 }

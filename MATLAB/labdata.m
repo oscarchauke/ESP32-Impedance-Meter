@@ -1,17 +1,19 @@
 % Load the CSV file
-data = readtable('../Lab-Data/sine-5k-40.csv');
+data = readtable('test-0.csv');
 % Extract columns for Voltage and Current
-Voltage = data.Voltage;
-Current = data.Current;
+Voltage = (data.Voltage ./ 4095).*1.1;
+Current = (data.Current ./4095).*1.1;
 
-fprintf("SNR Voltage: %f", snr(Voltage));
-fprintf("SNR Current: %f", snr(Current));
+fprintf("SNR Voltage: %f\n", snr(Voltage));
+fprintf("SNR Current: %f\n", snr(Current));
 
 % Define the sampling frequency and time vector
-Fs = 41300;  % Sampling frequency (Hz)
+Fs = 8200;  % Sampling frequency (Hz)
 T = 1/Fs;   % Sampling period
 N = length(Voltage); % Length of the signal
+
 t = (0:N-1)*T; % Time vector
+t = (0:(N-1)) / Fs;
 Frange = Fs/2;
 
 
@@ -28,7 +30,7 @@ Impe = Vfft ./ Cfft;
 frequencies = (-Fs/2):(Fs/N):(Fs/2-Fs/N); % Frequency vector for FFT
 
 %plot time domain signals
-plot(t, Voltage, 'b', t, Current, 'r');
+plot(t, Voltage, t, Current, 'r-o');
 legend('Voltage', 'Current');
 xlabel('Time');
 title('Time Domain Signals');
@@ -55,7 +57,7 @@ grid on;
 figure;
 subplot(2,1,1);
 plot(frequencies, abs(impedance));
-title('FFT of Voltage Signal');
+title('Magnitude of the Impedance');
 xlabel('Frequency (Hz)');
 ylabel('Magnitude');
 xlim([0 Frange]);
@@ -63,8 +65,8 @@ grid on;
 
 subplot(2,1,2);
 plot(frequencies, angle(impedance));
-title('FFT of Current Signal');
+title('Phase of the Impedance');
 xlabel('Frequency (Hz)');
-ylabel('Magnitude');
+ylabel('Phase');
 xlim([0 Frange]);
 grid on;

@@ -24,7 +24,7 @@ def log_data_to_csv(CSV_FILE, DATA_LABELS, serial_port):
             print(f"Error: {e}")
 
 BAUD_RATE = 115200
-SERIAL_PORT = 'COM3'
+SERIAL_PORT = 'COM4'
 
 testName = input("Enter test name: ")
 script_path = os.path.abspath(__file__)
@@ -47,4 +47,3 @@ while True:
         print('#'*15, "    TEST DONE   ",'#'*15)
         break
 ser.close()
-
