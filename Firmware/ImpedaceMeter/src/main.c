@@ -26,6 +26,7 @@
 #define ADC_GET_DATA(p_data) ((p_data)->type1.data)
 
 #define NFFT (NUM_SAMPLES / 4)
+#define NUM_BINS (12)
 
 #define LED_PIN GPIO_NUM_2
 #define READY_PIN GPIO_NUM_15
@@ -46,22 +47,31 @@ uint8_t result[NUM_SAMPLES] = {0};
 
 typedef struct
 {
-    float frequency;
-    uint16_t sampling_frequency;
+    uint32_t frequency;
+    uint32_t sampling_frequency;
     float amplitude;
     float phase;
 } impedanceBin;
 
 impedanceBin binItem;
 uint8_t binIndex = 0;
+const uint32_t freq = 80000;
 
 impedanceBin binList[] = {
-    {0.1, 20000, 0, 0},
-    {1, 20000, 0, 0},
-    {10.0, 20000, 0, 0},
-    {100.0, 20000, 0, 0},
-    {1000.0, 20000, 0, 0},
-    {5000.0, 20000, 0, 0}};
+    {100, freq, 0, 0},
+    {200, freq, 0, 0},
+    {400, freq, 0, 0},
+    {800, freq, 0, 0},
+    {1600, freq, 0, 0},
+    {3200, freq, 0, 0},
+    {6400, freq, 0, 0},
+    {12800, freq, 0, 0},
+    {25600, freq, 0, 0},
+    {51200, freq, 0, 0},
+    {102400, freq, 0, 0},
+    {204800, freq, 0, 0},
+    {409600, freq, 0, 0}
+    };
 
 void start_app();
 void init_app();
@@ -144,7 +154,7 @@ void start_app()
 void init_app()
 {
     printf("*\n");
-    printf("Change the frequency and press the ready button\n");
+    printf("Change the frequency to %ld and press the ready button\n", binItem.frequency);
     while (!gpio_get_level(READY_PIN))
     {
         vTaskDelay(1);
@@ -181,8 +191,8 @@ void sample_adc()
             {
                 voltage_samples[k] = (float)voltage_data;
                 current_sample[k] = (float)current_data;
-                voltage_fft->input[k] = voltage_data;
-                current_fft->input[k] = current_data;
+                voltage_fft->input[k] = (float)voltage_data;
+                current_fft->input[k] = (float)current_data;
                 k++;
             }
             else
@@ -209,7 +219,9 @@ void sample_adc()
 
 void compute_impedance()
 {
-    printf("Calculating Impedance at frequency %f\n", binItem.frequency);
+    removeDC(voltage_fft);
+    removeDC(current_fft);
+    printf("Calculating Impedance at frequency %ld\n", binItem.frequency);
     fft_execute(voltage_fft);
     fft_execute(current_fft);
 
@@ -218,7 +230,7 @@ void compute_impedance()
 
 void reconfig()
 {
-    if (binIndex < 5)
+    if (binIndex < NUM_BINS)
     {
         binItem = binList[++binIndex];
         STATE = STATE_INIT;
@@ -256,7 +268,7 @@ void removeDC(fft_config_t *signal)
     for (int i = 0; i < signal->size; i++)
         mean += signal->input[i];
 
-    mean = mean / NFFT;
+    mean = mean / signal->size;
     printf("Mean: %f\n", mean);
 
     for (int i = 0; i < signal->size; i++)

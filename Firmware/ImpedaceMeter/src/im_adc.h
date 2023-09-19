@@ -7,4 +7,4 @@
 #define CURRENT_CHANNEL 6
 #define VOLTAGE_CHANNEL 7
 
-void continuous_adc_init(uint16_t frequency, adc_continuous_handle_t *out_handle);
+void continuous_adc_init(uint32_t frequency, adc_continuous_handle_t *out_handle);
