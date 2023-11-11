@@ -1,0 +1,15 @@
+{
+    "C_Cpp.default.compilerPath": "C:/Users/chauk/.platformio/packages/toolchain-xtensa-esp32/bin/xtensa-esp32-elf-gcc.exe",
+    "files.associations": {
+        "*.c": "c",
+        "*.md": "markdown",
+        "pcd8544.h": "c",
+        "pcd8544_pin.h": "c",
+        "microfft.h": "c",
+        "*.tcc": "c",
+        "cmath": "c",
+        "complex": "c",
+        "fft.h": "c",
+        "sdkconfig.h": "c"
+    }
+}
